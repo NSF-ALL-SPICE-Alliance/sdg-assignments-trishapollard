@@ -146,6 +146,18 @@ ggplot(data = sdr_data, aes(x= goal_3_score, y = goal_4_score, color = regions_u
 
   - hint: you will have to assign a name to the plot
 
+```{r}
+goal_3_4_geom_point <- ggplot(data = sdr_data, aes(x= goal_3_score, y = goal_4_score, color = regions_used_for_the_sdr, label = country)) +
+  geom_point()+
+  theme_minimal()+
+  scale_color_viridis_d(option = "plasma")+
+  labs(title = "Regions Used for the SDR",
+       x = "Goal 3 Score",
+       y = "Goal 4 Score",
+       color = "Region")
+
+ggplotly(goal_3_4_geom_point)
+```
 
 
 ### Creating interactive maps with `leaflet`
