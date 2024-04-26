@@ -283,6 +283,20 @@ Can you edit the code chunk above that generates the map to:
 - Map a different sdg score
 - Change the color palette from "YlOrRd" to another palette
   - Hint: [look under the RColorBrewer Palettes here](https://www.datanovia.com/en/blog/top-r-color-palettes-to-know-for-great-data-visualization/)
+  
+```{r}
+mytext <- paste(
+    "Country: ", sdr_data_world_joined$country,"<br/>", 
+    "Goal 12 Score: ", round(sdr_data_world_joined$goal_12_score, 2), 
+    sep="") %>%
+  lapply(htmltools::HTML)
+
+leaflet(sdr_data_world_joined) %>% 
+  addTiles()  %>% 
+  setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons(stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorQuantile("Dark2", goal_12_score)(goal_12_score), label = mytext)
+```
+  
     
 
 
