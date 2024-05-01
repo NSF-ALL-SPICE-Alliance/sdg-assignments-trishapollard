@@ -29,6 +29,7 @@ library(ggpubr)
 library(janitor)
 library(ggcorrplot)
 library(vembedr)
+library(plotly)
 ```
 
 
@@ -215,8 +216,27 @@ ggplot(sdr_data, aes(x = goal_12_score,
     - **Hint** to be able to tell which point is which country, you will have to add `label = country` in the aes function after you tell ggplot what you which scores you want on the x and y axis
      - **Hint** to use the ggplotly() function, you will need to use `library()` to load in the plotly package in the first code chunk in this R Markdown
 
+
+
+```{r, warning=FALSE, message=FALSE}
+goal_2_6_plot <- ggplot(sdr_data, aes(x = goal_2_score, 
+                     y = goal_6_score,
+                     label = country)) +
+  geom_point() +
+  geom_smooth() +
+  stat_cor(output.type = "text", label.sep = '\n') +
+  theme_minimal() 
+
+ggplotly(goal_2_6_plot)
+```
+
   - in 4-6 sentences, come up with a hypotheses for the positive or negative correlation between the 2 goals
+      There is a relatively positive correlation between Goal 6 scores and Goal 2 scores: correlation coefficient (0.57 out of a possible 1). As Goal 6 score increases, Clean Water and Sanitation, so does Goal 2 score, Zero Hunger. This means that Hunger increases as there is less Clean Water and Sanitation. The p-value is < 2.2e-16 is statistically significant and shows that the results did not occur by chance.
       
       - are there any points that don't follow the trend (outliers)
-        
+          Yes
+          
         - which country(s) are outliers?
+          Oceania, Australia, Finland, Sweden, New Zealand and United Kingdom
+        
+
