@@ -334,7 +334,16 @@ plotPartial(pd)
 Edit this code chunk `k2 <- kmeans(sdr_data_imputed, centers = 2)` under the silhouette plot to increase the number of clusters
 
 - Then, run the code chunk `fviz_cluster(k2, data = sdr_data_imputed) + theme_minimal()` to see the new visualization with the increased number of clusters
-  
+
+```{r}
+k3 <- kmeans(sdr_data_imputed, centers = 3)
+```
+
+```{r}
+fviz_cluster(k3, data = sdr_data_imputed) + theme_minimal()
+```
+
+
 #### <span style="color: red;">Challenge 2</span>
 
 Edit this code chunk `rf_matmort <- randomForest(normalized_score_sdg3_matmort ~ ., data = sdr_data_imputed, importance = TRUE)` to predict a different indicator score (any indicator other than normalized_score_sdg3_matmort)
@@ -345,8 +354,41 @@ Edit this code chunk `rf_matmort <- randomForest(normalized_score_sdg3_matmort ~
     
     - *Hint* make sure to continue replacing rf_matmort with the new name you assign your random forest model
 
+```{r}
+rf_obesity <- randomForest(normalized_score_sdg2_obesity ~ ., data = sdr_data_imputed, importance = TRUE)
+```
 
+```{r}
+rf_obesity
+```
 
+```{r}
+importance_df2 <- as.data.frame(rf_obesity$importance)
+```
 
+```{r}
+importance_df2_top_10 <- importance_df2 %>%
+  rownames_to_column(var = "variable") %>%
+  slice_max(n = 10, order_by = `%IncMSE`)
+```
 
-  
+```{r}
+ggplot(importance_df2_top_10, aes(x = `%IncMSE`, y = reorder(variable, `%IncMSE`))) +
+  geom_bar(stat = "identity", fill = "steelblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Most Important Variables in Predicting Obesity",
+       subtitle = "Top 10",
+       y = "SDG Indicator",
+       x = "Feature Importance (% Increase in Mean Squared Error)")
+```
+
+```{r}
+pdp::partial(rf_obesity, pred.var = "normalized_score_sdg7_cleanfuel", plot = TRUE)
+```
+
+```{r}
+pd2 <- pdp::partial(rf_obesity, pred.var = c("normalized_score_sdg7_cleanfuel", "normalized_score_sdg3_tb"))
+# Default PDP
+plotPartial(pd2)
+```
+
