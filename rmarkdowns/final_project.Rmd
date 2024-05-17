@@ -1,0 +1,176 @@
+---
+title: "Final Project"
+author: "Trisha Pollard"
+date: "2024-05-08"
+output: html_document
+---
+
+Load in Packages used in the analysis
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(leaflet)
+library(plotly)
+library(ggpubr)
+library(rnaturalearth)
+library(sf)
+library(vembedr)
+```
+
+### Read in Data
+
+This is the SDR 2023 Data
+
+- This is from the [sustainability development report](https://sdgtransformationcenter.org/reports/sustainable-development-report-2023)
+
+```{r, message=FALSE}
+sdr_data <- read_csv(here("data/SDR-2023-Data.csv"))
+```
+
+Clean column names of our dataframe
+
+```{r}
+sdr_data <- sdr_data %>%
+  clean_names()
+```
+
+### SDG 6 World Map
+
+- SDG 6 is Clean Water and Sanitation
+
+
+Create a dataframe named world and select columns "name_long, iso_a3, and geometry"
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+```
+
+```{r}
+world <- world %>% 
+  select(name_long, iso_a3, geometry)
+```
+
+
+Change column names in both dataframes for the ISO3 Codes to match eachother and join the dataframes using leftjoin
+
+```{r}
+colnames(sdr_data)[which(colnames(sdr_data) == "country_code_iso3")] <- "iso_a3"
+```
+
+```{r}
+sdr_data_world_joined <- left_join(sdr_data, world, by = "iso_a3")
+```
+
+
+Check the class of the dataframe and change the class to an sf dataframe
+
+```{r}
+class(sdr_data_world_joined)
+```
+
+```{r}
+sdr_data_world_joined <- st_as_sf(sdr_data_world_joined)
+```
+
+```{r}
+class(sdr_data_world_joined)
+```
+
+
+Now we specify a coordinate reference system to WGS84, which stands for World Geodetic System 1984
+
+```{r}
+sdr_data_world_joined <- st_transform(sdr_data_world_joined, "+proj=longlat +datum=WGS84")
+```
+
+- Here is the final map of SDG 6 Scores by Region. This is the percentage of the population using at least basic drinking water services. If we scroll to the right of the map you can see that the Philippines has a score of 70.4 out of 100. The long term goal is a score of 100. Therefore, the Philippines is on track or maintaining the SDG 6 achievement, but significant challenges remain. The countries colored red have a higher SDG 6 score. Therefore, they are closer to meeting the goal score of 100. The countries that are yellow have a lower SDG 6 score than the Philippines. Now, let's look at the mean score by region.
+
+
+
+```{r}
+mytext <- paste(
+    "Country: ", sdr_data_world_joined$country,"<br/>", 
+    "Goal 6 Score: ", round(sdr_data_world_joined$goal_6_score, 2), 
+    sep="") %>%
+  lapply(htmltools::HTML)
+
+leaflet(sdr_data_world_joined) %>% 
+  addTiles()  %>% 
+  setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons(stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorQuantile("YlOrRd", goal_6_score)(goal_6_score), label = mytext)
+
+```
+
+
+### Mean SDG 6 Score by Region
+
+Create a bar graph showing the mean SDG 6 Score by Region
+
+```{r}
+mean_goal_6_scores <- sdr_data %>% 
+  group_by(regions_used_for_the_sdr) %>% 
+  summarize(mean_goal_6_score=mean(goal_6_score, na.rm = TRUE))
+
+```
+
+- Below we have 7 regions re-ordered by highest to lowest score. The Philippines is located in the East & South Asia region. East & South Asia seems to have an average score right in the middle of all the regions with a score of 67. 
+
+- The OECD region is ranked highest with a score of 83. The Organisation for Economic Co-operation and Development (OECD) is an international, intergovernmental economic organization of 38 countries. These countries span the globe with Costa Rica as it's newest member. It's obvious to see why this region has the highest score as it contains countries with higher overall economic growth. 
+
+- The Sub-Saharan Africa region is ranked the lowest with a score of 52.  
+
+- Now, let's narrow this down by the region East & South Asia.
+
+```{r}
+geom_bar <- ggplot(mean_goal_6_scores, aes(x= mean_goal_6_score, y = reorder(regions_used_for_the_sdr, mean_goal_6_score))) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+    labs (x = "Mean Clean Water and Sanitation Score",
+        y = "")
+
+ggplotly(geom_bar)
+```
+
+
+### SDG 6 Score by Country in East & South Asia
+
+Filter the data to East & South Asia. Create a bar chart for SDG 6 Clean Water and Sanitation. Then, reorder by country and add labels.
+
+```{r}
+esa_sdr_data <- sdr_data %>% 
+  filter(regions_used_for_the_sdr == "East & South Asia")
+```
+
+
+- There are 19 countries in the East & South Asia region. The Philippines is ranked the 13th highest out of the 19 countries, with 1 being the lowest raking. Malaysia and Thailand are ranked the highest with a score of 76. Pakistan is ranked the lowest with a score of 49. It seems that overall the Philippines has a moderate level of commitment to the 17 SDG's. 
+
+```{r, warning=FALSE}
+geom_bar <- ggplot(esa_sdr_data, aes(x= goal_6_score, y = reorder(country, goal_6_score))) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+    labs (x = "Clean Water and Sanitation",
+        y = "")
+
+ggplotly(geom_bar)
+```
+
+
+```{r, warning=FALSE}
+scatter_plot <- ggplot(esa_sdr_data, aes(x = goal_1_score, 
+                     y = goal_6_score,
+                     color = country)) +
+  geom_point() +
+  geom_smooth() +
+  stat_cor() +
+  theme_minimal() +
+  labs (x = "SDG 1 Score",
+        y = "SDG 6 Score",
+        color = "Country")
+
+ggplotly(scatter_plot)
+```
+
